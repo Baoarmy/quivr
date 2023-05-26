@@ -9,6 +9,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import Card from "../components/ui/Card";
 import PageHeading from "../components/ui/PageHeading";
+import { useSupabase } from "../supabase-provider";
+import { redirect } from "next/navigation";
 
 export default function UploadPage() {
   const [message, setMessage] = useState<Message | null>(null);
@@ -16,6 +18,10 @@ export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [pendingFileIndex, setPendingFileIndex] = useState<number>(0);
   const urlInputRef = useRef<HTMLInputElement | null>(null);
+  const { supabase, session } = useSupabase()
+  if (session === null) {
+    redirect('/login')
+  }
 
   const crawlWebsite = useCallback(async () => {
     // Validate URL
@@ -41,7 +47,12 @@ export default function UploadPage() {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/crawl`,
-        config
+        config,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
       );
 
       setMessage({
@@ -62,7 +73,12 @@ export default function UploadPage() {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`,
-        formData
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
       );
 
       setMessage({
@@ -125,8 +141,8 @@ export default function UploadPage() {
         className="w-full outline-none pt-20 flex flex-col gap-5 items-center justify-center p-6"
       >
         <PageHeading
-          title="Add Knowledge"
-          subtitle="Upload files to your second brain"
+          title="Upload Knowledge"
+          subtitle="Text, document, spreadsheet, presentation, audio, video, and URLs supported"
         />
         {/* Wrap the cards in a flex container */}
         <div className="flex justify-center gap-5">
@@ -153,7 +169,7 @@ export default function UploadPage() {
                   onClick={open}
                   className="opacity-50 cursor-pointer hover:opacity-100 hover:underline transition-opacity"
                 >
-                  Drag and drop some files here, or click to browse files
+                  Drag and drop files here, or click to browse
                 </button>
               )}
             </div>
@@ -171,18 +187,18 @@ export default function UploadPage() {
                 onClick={crawlWebsite}
                 className="opacity-50 cursor-pointer hover:opacity-100 hover:underline transition-opacity"
               >
-                Crawl Website
+                Crawl
               </button>
             </div>
           </Card>
         </div>
         <div className="flex flex-col items-center justify-center gap-5">
           <Button isLoading={isPending} onClick={uploadAllFiles} className="">
-            {isPending ? `Adding - ${files[pendingFileIndex].name}` : "Add"}
+            {isPending ? `Uploading ${files[pendingFileIndex].name}` : "Upload"}
           </Button>
           <Link href={"/chat"}>
             <Button variant={"secondary"} className="py-3">
-              Start Chatting with your brain
+              Chat
             </Button>
           </Link>
         </div>
